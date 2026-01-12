@@ -1,0 +1,42 @@
+name: Export Themes
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Create themes listing
+      run: |
+        themes_list=$(for theme in themes/*.zsh-theme; do echo "- $(basename "$theme")"; done)
+        cat << EOF > themes-export.txt
+        # ZSH Themes Collection
+
+        This archive contains the following Zsh themes:
+
+        $themes_list
+
+        Source Repository: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+        EOF
+
+    - name: Create zip archive
+      run: |
+        zip -r toonvanvr-zsh-themes-${{ github.ref_name }}.zip themes-export.txt themes/
+
+    - name: Create GitHub release
+      uses: softprops/action-gh-release@v2.5.0
+      with:
+        files: toonvanvr-zsh-themes-${{ github.ref_name }}.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
